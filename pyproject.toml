@@ -30,6 +30,7 @@ Issues = "https://github.com/tboye/gancio-py/issues"
 test = [
     "pytest",
     "pillow",
+    "pytest-sugar>=1.1.1",
 ]
 
 [tool.pytest.ini_options]
