@@ -29,6 +29,7 @@ Issues = "https://github.com/tboye/gancio-py/issues"
 [project.optional-dependencies]
 test = [
     "pytest",
+    "pillow",
 ]
 
 [tool.pytest.ini_options]

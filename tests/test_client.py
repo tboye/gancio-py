@@ -1,6 +1,18 @@
+import io
+import time
+
 import pytest
+from PIL import Image
 
 from gancio_py import Gancio, GancioError
+
+
+def _test_image():
+    """Creates a minimal valid PNG image in memory."""
+    buf = io.BytesIO()
+    Image.new("RGB", (1, 1), color="red").save(buf, format="PNG")
+    buf.seek(0)
+    return buf
 
 pytestmark = pytest.mark.integration
 
@@ -38,10 +50,10 @@ class TestEvents:
 
     def test_update_event(self, client, create_event):
         created = create_event()
-        updated = client.update_event(
-            event_id=created["id"],
-            title="Test: Updated Event",
-        )
+        updated = client.update_event(event_id=created["id"],
+                                      title="Test: Updated Event",
+                                      place_name="Test Place",
+                                      place_address="123 Test Street")
         assert updated["title"] == "Test: Updated Event"
 
         fetched = client.get_event(created["slug"])
@@ -50,6 +62,7 @@ class TestEvents:
     def test_delete_event(self, client, create_event):
         created = create_event()
         client.delete_event(created["id"])
+        time.sleep(1)
 
         with pytest.raises(GancioError) as exc_info:
             client.get_event(created["slug"])
@@ -61,9 +74,19 @@ class TestEvents:
         titles = [e["title"] for e in events]
         assert any("Filtered" in t for t in titles)
 
-    def test_confirm_event(self, client, create_event):
+    def test_create_event_with_image(self, client, create_event):
+        created = create_event(suffix=" With Image", image=_test_image())
+        fetched = client.get_event(created["slug"])
+        assert fetched["media"] is not None
+
+    def test_update_event_with_image(self, client, create_event):
         created = create_event()
-        client.confirm_event(created["id"])
+        client.update_event(event_id=created["id"],
+                            place_name="Test Place",
+                            place_address="123 Test Street",
+                            image=_test_image())
+        fetched = client.get_event(created["slug"])
+        assert fetched["media"] is not None
 
 
 class TestPlaces:
