@@ -54,11 +54,11 @@ uv sync --extra test
 
 # Fresh container (runs first-time setup automatically):
 docker compose down -v && docker compose up -d
-uv run pytest -m integration -v
+uv run pytest -m integration -v --cov
 
 # Or against an existing instance with known credentials:
 GANCIO_URL=http://localhost:13120 \
 GANCIO_ADMIN_EMAIL=admin \
 GANCIO_ADMIN_PASSWORD=yourpassword \
-uv run pytest -m integration -v
+uv run pytest -m integration -v --cov
 ```
