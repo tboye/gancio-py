@@ -30,3 +30,8 @@ Issues = "https://github.com/tboye/gancio-py/issues"
 test = [
     "pytest",
 ]
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: integration tests requiring a running Gancio instance",
+]

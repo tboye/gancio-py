@@ -18,7 +18,7 @@ gancio = Gancio("https://your-gancio-instance.org")
 gancio.login("user@example.com", "password")
 
 # Or use a pre-existing token
-gancio = Gancio("https://your-gancio-instance.org", token="your-token")
+gancio = Gancio("https://your-gancio-instance.org", access_token="your-token")
 
 # Create an event
 event = gancio.create_event(
