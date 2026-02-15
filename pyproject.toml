@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "gancio-py"
+version = "0.1.0"
+description = "Python client for the Gancio event platform API"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [
+    { name = "tboye", email = "me@tboye.dev" },
+]
+keywords = ["gancio", "events", "api-client"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+]
+dependencies = [
+    "requests",
+]
+
+[project.urls]
+Homepage = "https://github.com/tboye/gancio-py"
+Repository = "https://github.com/tboye/gancio-py"
+Issues = "https://github.com/tboye/gancio-py/issues"
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+]
