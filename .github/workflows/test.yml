@@ -2,6 +2,9 @@ name: Tests
 
 on:
   push:
+    paths-ignore:
+      - '*.md'
+      - LICENSE
   workflow_call:
 
 jobs:
