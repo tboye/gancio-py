@@ -23,7 +23,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "requests",
+    "requests>=2.20,<3",
 ]
 
 [project.urls]
