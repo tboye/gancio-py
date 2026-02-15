@@ -4,15 +4,16 @@ import logging
 
 import requests
 
-from gancio_py import GancioError
+from gancio_py.exceptions import GancioError
 
 
 class Gancio:
     """Client for the Gancio API."""
 
-    def __init__(self, url: str, token: str = None):
+    def __init__(self, url: str, access_token: str = None):
         self.url = url.rstrip("/")
-        self.token = token
+        self.access_token = access_token
+        self.refresh_token = None
         self.logger = logging.getLogger(self.__class__.__name__)
 
     def _request(self, method: str, path: str, **kwargs) -> requests.Response:
@@ -21,8 +22,8 @@ class Gancio:
         Raises GancioError on HTTP errors.
         """
         headers = kwargs.pop('headers', {})
-        if self.token:
-            headers['Authorization'] = f"Bearer {self.token}"
+        if self.access_token:
+            headers['Authorization'] = f"Bearer {self.access_token}"
 
         response = requests.request(method, f"{self.url}{path}", headers=headers, **kwargs)
 
@@ -50,18 +51,23 @@ class Gancio:
     # --- Auth ---
 
     def login(self, username: str, password: str) -> dict:
-        """Log in and store the access token for future requests.
+        """Logs in and stores tokens for future requests.
 
-        Returns the login response containing access_token, username, etc.
+        Returns:
+            Login response dict containing access_token, refresh_token and username.
+
+        Raises:
+            GancioError: Error occurred while executing the request.
         """
-        response = self._request(
-            'POST', '/oauth/login',
-            data=dict(username=username, password=password,
-                      grant_type='password', client_id='self'),
-            headers={'Content-Type': "application/x-www-form-urlencoded"},
-        )
+        response = self._request('POST', '/oauth/login',
+                                 data=dict(username=username,
+                                           password=password,
+                                           grant_type='password',
+                                           client_id='self'),
+                                 headers={'Content-Type': "application/x-www-form-urlencoded"})
         data = response.json()
-        self.token = data['access_token']
+        self.access_token = data['access_token']
+        self.refresh_token = data['refresh_token']
         self.logger.info(f"Logged in as '{data['username']}' @ {self.url}")
         return data
 
