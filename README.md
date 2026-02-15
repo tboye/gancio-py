@@ -1,16 +1,18 @@
 # gancio-py
 
 [![Tests](https://github.com/tboye/gancio-py/actions/workflows/test.yml/badge.svg)](https://github.com/tboye/gancio-py/actions/workflows/test.yml)
-[![PyPI](https://img.shields.io/pypi/v/gancio-py)](https://pypi.org/project/gancio-py/)
-[![Python](https://img.shields.io/pypi/pyversions/gancio-py)](https://pypi.org/project/gancio-py/)
+[![PyPI](https://img.shields.io/pypi/v/gancio-py?include_prereleases)](https://pypi.org/project/gancio-py/)
+[![Python](https://img.shields.io/pypi/pyversions/gancio-py?include_prereleases)](https://pypi.org/project/gancio-py/)
 
 Python client for the [Gancio](https://gancio.org) event platform API.
 
 ## Installation
 
 ```bash
-pip install gancio-py
+pip install --pre gancio-py
 ```
+
+> **Note:** gancio-py is currently in beta. The API may change before the stable release.
 
 ## Usage
 
