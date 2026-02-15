@@ -1,6 +1,8 @@
 # gancio-py
 
 [![Tests](https://github.com/tboye/gancio-py/actions/workflows/test.yml/badge.svg)](https://github.com/tboye/gancio-py/actions/workflows/test.yml)
+[![PyPI](https://img.shields.io/pypi/v/gancio-py)](https://pypi.org/project/gancio-py/)
+[![Python](https://img.shields.io/pypi/pyversions/gancio-py)](https://pypi.org/project/gancio-py/)
 
 Python client for the [Gancio](https://gancio.org) event platform API.
 
@@ -47,6 +49,20 @@ gancio.delete_event(event_id=1)
 places = gancio.search_place("Venue")
 ```
 
+### Error handling
+
+```python
+from gancio_py import Gancio, GancioError
+
+gancio = Gancio("https://your-gancio-instance.org")
+
+try:
+    event = gancio.get_event("nonexistent-slug")
+except GancioError as e:
+    print(e.status_code)     # 404
+    print(e.response_body)   # error details from the server
+```
+
 ## Development
 
 Run integration tests locally with Docker:
@@ -64,3 +80,14 @@ GANCIO_ADMIN_EMAIL=admin \
 GANCIO_ADMIN_PASSWORD=yourpassword \
 uv run pytest -m integration -v --cov
 ```
+
+### Linting
+
+```bash
+uvx ruff check
+uvx ruff check --fix  # auto-fix
+```
+
+## License
+
+[MIT](LICENSE)
