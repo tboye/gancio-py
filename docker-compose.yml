@@ -1,0 +1,6 @@
+services:
+  gancio:
+    image: cisti/gancio
+    restart: unless-stopped
+    ports:
+      - "13120:13120"
