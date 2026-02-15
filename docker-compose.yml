@@ -2,5 +2,7 @@ services:
   gancio:
     image: cisti/gancio
     restart: unless-stopped
+    environment:
+      - NODE_ENV=development
     ports:
       - "13120:13120"
