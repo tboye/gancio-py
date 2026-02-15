@@ -1,5 +1,7 @@
 # gancio-py
 
+[![Tests](https://github.com/tboye/gancio-py/actions/workflows/test.yml/badge.svg)](https://github.com/tboye/gancio-py/actions/workflows/test.yml)
+
 Python client for the [Gancio](https://gancio.org) event platform API.
 
 ## Installation
