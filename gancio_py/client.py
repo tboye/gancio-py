@@ -1,7 +1,6 @@
 import io
 import json
 import logging
-
 import requests
 
 from gancio_py.exceptions import GancioError

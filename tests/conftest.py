@@ -54,7 +54,9 @@ def client(admin_credentials):
 
 @pytest.fixture
 def create_event(client):
-    """Factory fixture to create test events."""
+    """Factory fixture to create test events. Cleans up created events after test."""
+    created_ids = []
+
     def _create(suffix="", **overrides):
         defaults = dict(
             title=f"Test: Event{suffix}",
@@ -65,15 +67,14 @@ def create_event(client):
             tags=["test"],
         )
         defaults.update(overrides)
-        return client.create_event(**defaults)
-    return _create
+        event = client.create_event(**defaults)
+        created_ids.append(event["id"])
+        return event
 
+    yield _create
 
-@pytest.fixture(autouse=True)
-def cleanup_events(client):
-    """Deletes any test events created during a test."""
-    yield
-    events = client.get_events()
-    for event in events:
-        if event["title"].startswith("Test:"):
-            client.delete_event(event["id"])
+    for event_id in created_ids:
+        try:
+            client.delete_event(event_id)
+        except Exception:
+            pass

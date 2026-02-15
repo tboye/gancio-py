@@ -39,17 +39,29 @@ class TestUser:
 
 
 class TestEvents:
-    def test_create_and_get_event(self, client, create_event):
-        created = create_event()
-        assert created["title"] == "Test: Event"
+    def test_event_lifecycle(self, client, create_event):
+        """Create with all fields, update, verify, delete."""
+        future = int(time.time()) + 7 * 24 * 60 * 60
+
+        # Create with all optional fields
+        created = create_event(description="A detailed description",
+                               end_datetime=future + 3600,
+                               place_latitude=52.3676,
+                               place_longitude=4.9041,
+                               online_locations=["https://example.com/stream"],
+                               tags=["test", "music", "live"])
         assert "slug" in created
 
+        # Verify all fields persisted
         fetched = client.get_event(created["slug"])
         assert fetched["title"] == "Test: Event"
+        assert fetched["description"] == "A detailed description"
+        assert fetched["end_datetime"] is not None
         assert fetched["place"]["name"] == "Test Place"
+        assert len(fetched["tags"]) == 3
+        assert "https://example.com/stream" in fetched["online_locations"]
 
-    def test_update_event(self, client, create_event):
-        created = create_event()
+        # Update
         updated = client.update_event(event_id=created["id"],
                                       title="Test: Updated Event",
                                       place_name="Test Place",
@@ -59,8 +71,7 @@ class TestEvents:
         fetched = client.get_event(created["slug"])
         assert fetched["title"] == "Test: Updated Event"
 
-    def test_delete_event(self, client, create_event):
-        created = create_event()
+        # Delete
         client.delete_event(created["id"])
         time.sleep(1)
 
@@ -68,39 +79,51 @@ class TestEvents:
             client.get_event(created["slug"])
         assert exc_info.value.status_code == 404
 
-    def test_get_events_with_filters(self, client, create_event):
-        create_event(suffix=" Filtered")
-        events = client.get_events(tags=["test"])
-        titles = [e["title"] for e in events]
-        assert any("Filtered" in t for t in titles)
+    def test_multiple_events_filters_and_places(self, client, create_event):
+        """Create events across places and tags, verify filtering and place lookup."""
+        create_event(suffix=" One", tags=["test", "music"])
+        create_event(suffix=" Two", tags=["test", "art"],
+                     place_name="Test Venue B", place_address="456 Other Street")
 
-    def test_create_event_with_image(self, client, create_event):
+        # Filter by tag
+        all_events = client.get_events(tags=["test"])
+        assert len(all_events) >= 2
+
+        music_events = client.get_events(tags=["music"])
+        music_titles = [e["title"] for e in music_events]
+        assert any("One" in t for t in music_titles)
+        assert not any("Two" in t for t in music_titles)
+
+    def test_event_with_image(self, client, create_event):
+        """Create with image, then update another event's image."""
+        # Create with image
         created = create_event(suffix=" With Image", image=_test_image())
         fetched = client.get_event(created["slug"])
         assert fetched["media"] is not None
 
-    def test_update_event_with_image(self, client, create_event):
-        created = create_event()
-        client.update_event(event_id=created["id"],
+        # Update a different event to add an image
+        plain = create_event(suffix=" No Image")
+        client.update_event(event_id=plain["id"],
                             place_name="Test Place",
                             place_address="123 Test Street",
                             image=_test_image())
-        fetched = client.get_event(created["slug"])
+        fetched = client.get_event(plain["slug"])
         assert fetched["media"] is not None
 
 
 class TestPlaces:
-    def test_search_place(self, client, create_event):
-        create_event()
+    def test_search_and_get_place(self, client, create_event):
+        create_event(suffix=" One")
+        create_event(suffix=" Two",
+                     place_name="Test Venue B", place_address="456 Other Street")
+
         results = client.search_place("Test Place")
         assert len(results) > 0
         assert results[0]["name"] == "Test Place"
 
-    def test_get_place(self, client, create_event):
-        create_event()
-        place = client.get_place("Test Place")
+        place = client.get_place("Test Venue B")
         assert place is not None
-        assert place["name"] == "Test Place"
+        assert place["name"] == "Test Venue B"
 
 
 class TestGancioError:
