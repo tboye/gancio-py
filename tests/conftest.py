@@ -52,6 +52,23 @@ def client(admin_credentials):
     return c
 
 
+@pytest.fixture
+def create_event(client):
+    """Factory fixture to create test events."""
+    def _create(suffix="", **overrides):
+        defaults = dict(
+            title=f"Test: Event{suffix}",
+            start_datetime=int(time.time()) + 7 * 24 * 60 * 60,
+            place_name="Test Place",
+            place_address="123 Test Street",
+            description="A test event",
+            tags=["test"],
+        )
+        defaults.update(overrides)
+        return client.create_event(**defaults)
+    return _create
+
+
 @pytest.fixture(autouse=True)
 def cleanup_events(client):
     """Deletes any test events created during a test."""
