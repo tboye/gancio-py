@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "gancio-py"
-version = "0.1.0"
+version = "0.1.0b1"
 description = "Python client for the Gancio event platform API"
 readme = "README.md"
 requires-python = ">=3.10"

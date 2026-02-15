@@ -25,13 +25,11 @@ gancio.login("user@example.com", "password")
 gancio = Gancio("https://your-gancio-instance.org", access_token="your-token")
 
 # Create an event
-event = gancio.create_event(
-    title="My Event",
-    start_datetime=1700000000,
-    place_name="The Venue",
-    place_address="123 Main St",
-    tags=["music", "live"],
-)
+event = gancio.create_event(title="My Event",
+                            start_datetime=1700000000,
+                            place_name="The Venue",
+                            place_address="123 Main St",
+                            tags=["music", "live"])
 
 # List events
 events = gancio.get_events(tags=["music"])

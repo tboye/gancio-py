@@ -8,7 +8,12 @@ from gancio_py.exceptions import GancioError
 
 
 class Gancio:
-    """Client for the Gancio API."""
+    """Client for the Gancio API.
+
+    Args:
+        url: Base URL of the Gancio instance (e.g. 'https://gancio.example.org').
+        access_token: Optional OAuth access token for authenticated requests.
+    """
 
     def __init__(self, url: str, access_token: str = None):
         self.url = url.rstrip("/")
@@ -17,9 +22,18 @@ class Gancio:
         self.logger = logging.getLogger(self.__class__.__name__)
 
     def _request(self, method: str, path: str, **kwargs) -> requests.Response:
-        """Send a request to the Gancio API and return the response.
+        """Performs an HTTP request against the Gancio instance.
 
-        Raises GancioError on HTTP errors.
+        Args:
+            method: HTTP method (GET, POST, PUT, DELETE).
+            path: API endpoint path (e.g. '/api/events').
+            **kwargs: Passed to ``requests.request``.
+
+        Returns:
+            The response object.
+
+        Raises:
+            GancioError: If the server responds with an error status code.
         """
         headers = kwargs.pop('headers', {})
         if self.access_token:
@@ -35,16 +49,22 @@ class Gancio:
     # --- Setup ---
 
     def setup_db(self, dialect: str = 'sqlite', storage: str = '/opt/gancio/db.sqlite') -> None:
-        """Configure the database during first-run setup."""
+        """Configures the database during first-run setup.
+
+        Args:
+            dialect: Database dialect ('sqlite' or 'postgres').
+            storage: Path to the SQLite database file. Only used when dialect is 'sqlite'.
+        """
         db = {'dialect': dialect}
         if dialect == "sqlite":
             db['storage'] = storage
         self._request('POST', '/api/setup/db', json={"db": db})
 
     def setup_restart(self) -> dict:
-        """Complete first-run setup. Creates admin user and restarts Gancio.
+        """Completes first-run setup by creating an admin user and restarting Gancio.
 
-        Returns dict with 'email' and 'password' of the created admin.
+        Returns:
+            Dict with 'email' and 'password' of the created admin.
         """
         return self._request('POST', '/api/setup/restart').json()
 
@@ -53,11 +73,15 @@ class Gancio:
     def login(self, username: str, password: str) -> dict:
         """Logs in and stores tokens for future requests.
 
+        Args:
+            username: User email address.
+            password: User password.
+
         Returns:
-            Login response dict containing access_token, refresh_token and username.
+            Dict containing 'access_token', 'refresh_token', and 'username'.
 
         Raises:
-            GancioError: Error occurred while executing the request.
+            GancioError: If the credentials are invalid.
         """
         response = self._request('POST', '/oauth/login',
                                  data=dict(username=username,
@@ -74,7 +98,11 @@ class Gancio:
     # --- User ---
 
     def get_user(self) -> dict:
-        """Returns the currently authenticated user."""
+        """Returns the currently authenticated user.
+
+        Returns:
+            Dict with user details including 'email' and 'settings'.
+        """
         return self._request('GET', '/api/user').json()
 
     # --- Events ---
@@ -83,7 +111,24 @@ class Gancio:
                    places: list = None, query: str = None, max: int = None,
                    page: int = None, show_recurrent: bool = None,
                    show_multidate: bool = None) -> list[dict]:
-        """Returns events matching the given filters."""
+        """Fetches events matching the given filters.
+
+        All parameters are optional. When none are provided, returns upcoming events.
+
+        Args:
+            start: Only return events starting after this Unix timestamp.
+            end: Only return events starting before this Unix timestamp.
+            tags: Filter by tag names.
+            places: Filter by place names.
+            query: Free-text search query.
+            max: Maximum number of events to return.
+            page: Page number for pagination.
+            show_recurrent: Include recurring events.
+            show_multidate: Include multi-day events.
+
+        Returns:
+            List of event dicts.
+        """
         params = {}
         if start is not None:
             params['start'] = start
@@ -107,7 +152,17 @@ class Gancio:
         return self._request('GET', '/api/events', params=params).json()
 
     def get_event(self, slug: str) -> dict:
-        """Gets event by its slug."""
+        """Fetches an event by its slug.
+
+        Args:
+            slug: The event's URL slug.
+
+        Returns:
+            Event dict with full details including 'place', 'tags', and 'media'.
+
+        Raises:
+            GancioError: If the event is not found (404).
+        """
         return self._request('GET', f'/api/event/detail/{slug}').json()
 
     def create_event(self, title: str, start_datetime: int, place_name: str, place_address: str,
@@ -116,7 +171,27 @@ class Gancio:
                      tags: list[str] = None, online_locations: list[str] = None,
                      image: io.BytesIO = None, image_url: str = None,
                      multidate: bool = None, recurrent: dict = None) -> dict:
-        """Creates an event. Returns the created event."""
+        """Creates a new event.
+
+        Args:
+            title: Event title.
+            start_datetime: Start time as a Unix timestamp.
+            place_name: Name of the venue.
+            place_address: Address of the venue.
+            description: Event description (HTML allowed).
+            end_datetime: End time as a Unix timestamp.
+            place_latitude: Venue latitude.
+            place_longitude: Venue longitude.
+            tags: List of tag names.
+            online_locations: List of URLs for online participation.
+            image: Image file as a BytesIO object.
+            image_url: URL of an image to attach.
+            multidate: Whether the event spans multiple days.
+            recurrent: Recurrence rules as a dict.
+
+        Returns:
+            The created event dict.
+        """
         data = {'title': title,
                 'start_datetime': start_datetime,
                 'place_name': place_name,
@@ -156,7 +231,30 @@ class Gancio:
                      tags: list[str] = None, online_locations: list[str] = None,
                      image: io.BytesIO = None, image_url: str = None,
                      multidate: bool = None, recurrent: dict = None) -> dict:
-        """Updates an event. Returns the updated event."""
+        """Updates an existing event.
+
+        Only the provided fields are updated; omitted fields remain unchanged.
+
+        Args:
+            event_id: ID of the event to update.
+            title: New event title.
+            start_datetime: New start time as a Unix timestamp.
+            place_name: New venue name.
+            place_address: New venue address.
+            description: New event description.
+            end_datetime: New end time as a Unix timestamp.
+            place_latitude: New venue latitude.
+            place_longitude: New venue longitude.
+            tags: New list of tag names (replaces existing tags).
+            online_locations: New list of online URLs.
+            image: New image file as a BytesIO object.
+            image_url: URL of a new image to attach.
+            multidate: Whether the event spans multiple days.
+            recurrent: New recurrence rules as a dict.
+
+        Returns:
+            The updated event dict.
+        """
         data = {'id': event_id}
 
         if title is not None:
@@ -194,30 +292,56 @@ class Gancio:
         return result
 
     def delete_event(self, event_id: int) -> None:
-        """Deletes an event by ID."""
+        """Deletes an event.
+
+        Args:
+            event_id: ID of the event to delete.
+        """
         self._request('DELETE', f'/api/event/{event_id}')
         self.logger.info(f"Deleted event with ID '{event_id}'")
 
     def confirm_event(self, event_id: int) -> None:
-        """Confirms an event by ID."""
+        """Confirms a pending event.
+
+        Args:
+            event_id: ID of the event to confirm.
+        """
         self._request('PUT', f'/api/event/confirm/{event_id}')
         self.logger.info(f"Confirmed event '{event_id}'")
 
     # --- Places ---
 
     def search_place(self, query: str) -> list[dict]:
-        """Searches for places by name. Returns list of matching places."""
+        """Searches for places by name.
+
+        Args:
+            query: Search query string.
+
+        Returns:
+            List of matching place dicts.
+        """
         return self._request('GET', '/api/place', params=dict(search=query)).json()
 
     def get_place(self, place_name: str) -> dict | None:
-        """Gets a place by exact name. Returns None if not found."""
+        """Finds a place by exact name.
+
+        Args:
+            place_name: Exact name of the place.
+
+        Returns:
+            Place dict, or None if not found.
+        """
         results = self.search_place(place_name)
         return results[0] if results else None
 
     def get_place_events(self, place_name: str) -> dict | None:
-        """Gets a place and its future events by place name.
+        """Fetches a place and its upcoming events.
 
-        Returns None if place not found.
+        Args:
+            place_name: Name of the place.
+
+        Returns:
+            Dict with place details and an 'events' list, or None if not found.
         """
         try:
             return self._request('GET', f'/api/place/{place_name}').json()
@@ -230,7 +354,17 @@ class Gancio:
 
     def update_page(self, page_id: int, content: str, title: str = None,
                     visible: bool = None) -> dict:
-        """Updates a page by ID. Returns the updated page."""
+        """Updates a page.
+
+        Args:
+            page_id: ID of the page to update.
+            content: New page content (HTML).
+            title: New page title.
+            visible: Whether the page is visible in the navigation.
+
+        Returns:
+            The updated page dict.
+        """
         data = dict(content=content)
         if title is not None:
             data['title'] = title
