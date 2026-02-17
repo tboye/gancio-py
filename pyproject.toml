@@ -37,10 +37,10 @@ dev = [
     "pre-commit",
 ]
 test = [
-    "pytest",
-    "pytest-cov",
-    "pillow",
-    "pytest-sugar>=1.1.1",
+    "pytest>=9,<10",
+    "pytest-cov>=7,<8",
+    "pillow>=12,<13",
+    "pytest-sugar>=1.1.1,<2",
 ]
 
 [tool.pytest.ini_options]

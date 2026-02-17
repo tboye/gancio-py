@@ -3,6 +3,7 @@
 [![Tests](https://github.com/tboye/gancio-py/actions/workflows/test.yml/badge.svg)](https://github.com/tboye/gancio-py/actions/workflows/test.yml)
 [![PyPI](https://img.shields.io/pypi/v/gancio-py?include_prereleases)](https://pypi.org/project/gancio-py/)
 [![Python](https://img.shields.io/pypi/pyversions/gancio-py?include_prereleases)](https://pypi.org/project/gancio-py/)
+[![Coverage Status](https://coveralls.io/repos/github/tboye/gancio-py/badge.svg?branch=main)](https://coveralls.io/github/tboye/gancio-py?branch=main)
 
 Python client for the [Gancio](https://gancio.org) event platform API.
 
