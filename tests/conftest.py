@@ -78,3 +78,22 @@ def create_event(client):
             client.delete_event(event_id)
         except Exception:
             pass
+
+
+@pytest.fixture
+def create_page(client):
+    """Factory fixture to create test pages. Cleans up after test."""
+    created_ids = []
+
+    def _create(title="Test Page", content="<p>Test</p>", **kwargs):
+        page = client.create_page(title=title, content=content, **kwargs)
+        created_ids.append(page['id'])
+        return page
+
+    yield _create
+
+    for page_id in created_ids:
+        try:
+            client.delete_page(page_id)
+        except Exception:
+            pass
