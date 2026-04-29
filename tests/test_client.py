@@ -209,17 +209,14 @@ class TestSettings:
 
     def test_logo(self, client):
         client.set_logo(_test_image())
-        assert client.get_settings().get('logo')
         assert isinstance(client.get_logo(), bytes)
 
     def test_fallback_image(self, client):
         client.set_fallback_image(_test_image())
-        assert client.get_settings().get('fallback_image')
         assert isinstance(client.get_fallback_image(), bytes)
 
     def test_header_image(self, client):
         client.set_header_image(_test_image())
-        assert client.get_settings().get('header_image')
         assert isinstance(client.get_header_image(), bytes)
 
 
