@@ -139,13 +139,26 @@ class TestPages:
         assert fetched['content'] == "<p>Hello</p>"
 
     def test_update_page(self, client, create_page):
-        page = create_page()
+        page = create_page(title="Original Title", content="<p>Original</p>")
 
         client.update_page(page_id=page['id'], title="Updated Title", content="<p>Updated</p>")
 
         fetched = client.get_page(page['slug'])
         assert fetched['title'] == "Updated Title"
         assert fetched['content'] == "<p>Updated</p>"
+
+    def test_partial_update_page(self, client, create_page):
+        page = create_page(title="Original Title", content="<p>Original</p>")
+
+        client.update_page(page_id=page['id'], title="New Title")
+        fetched = client.get_page(page['slug'])
+        assert fetched['title'] == "New Title"
+        assert fetched['content'] == "<p>Original</p>"
+
+        client.update_page(page_id=page['id'], content="<p>New Content</p>")
+        fetched = client.get_page(page['slug'])
+        assert fetched['title'] == "New Title"
+        assert fetched['content'] == "<p>New Content</p>"
 
     def test_delete_page(self, client, create_page):
         page = create_page()
