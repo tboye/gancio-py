@@ -352,25 +352,85 @@ class Gancio:
 
     # --- Pages ---
 
-    def update_page(self, page_id: int, content: str, title: str = None,
+    def get_pages(self) -> list[dict]:
+        """Fetches all pages.
+
+        Returns:
+            List of page dicts.
+        """
+        results = self._request('GET', '/api/pages').json()
+        self.logger.info(f"Fetched {len(results)} pages")
+        return results
+
+    def create_page(self, title: str, content: str, visible: bool = None) -> dict:
+        """Creates a new page.
+
+        Args:
+            title: Page title.
+            content: Page content (HTML).
+            visible: Whether the page is visible in the navigation.
+
+        Returns:
+            The created page dict.
+        """
+        data = dict(title=title, content=content)
+        if visible is not None:
+            data['visible'] = visible
+
+        result = self._request('POST', '/api/pages', data=data).json()
+        self.logger.info(f"Created page '{title}'")
+        return result
+
+    def get_page(self, slug: str) -> dict | None:
+        """Fetches a page by its slug.
+
+        Args:
+            slug: The page's URL slug (e.g. 'my-new-page').
+
+        Returns:
+            Page dict with 'id', 'title', 'content', 'visible', and 'slug', or None if not found.
+        """
+        try:
+            result = self._request('GET', f'/api/pages/{slug}').json()
+            self.logger.info(f"Fetched page '{slug}'")
+            return result
+        except GancioError as e:
+            if e.status_code == 404:
+                self.logger.info(f"Page not found: '{slug}'")
+                return None
+            raise
+
+    def update_page(self, page_id: int, title: str = None, content: str = None,
                     visible: bool = None) -> dict:
         """Updates a page.
 
         Args:
             page_id: ID of the page to update.
-            content: New page content (HTML).
             title: New page title.
+            content: New page content (HTML).
             visible: Whether the page is visible in the navigation.
 
         Returns:
             The updated page dict.
         """
-        data = dict(content=content)
+        data = {}
         if title is not None:
             data['title'] = title
+        if content is not None:
+            data['content'] = content
         if visible is not None:
             data['visible'] = visible
 
         result = self._request('PUT', f'/api/pages/{page_id}', data=data).json()
-        self.logger.info(f"Updated page {result}")
+        self.logger.info(f"Updated page {page_id}")
         return result
+
+    def delete_page(self, page_id: int) -> None:
+        """Deletes a page.
+
+        Args:
+            page_id: ID of the page to delete.
+        """
+        self._request('DELETE', f'/api/pages/{page_id}')
+        self.logger.info(f"Deleted page {page_id}")
+

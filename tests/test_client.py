@@ -126,6 +126,52 @@ class TestPlaces:
         assert place["name"] == "Test Venue B"
 
 
+class TestPages:
+    def test_create_and_get_page(self, client, create_page):
+        page = create_page(title="Test Page", content="<p>Hello</p>")
+        assert page['title'] == "Test Page"
+        assert 'slug' in page
+
+        fetched = client.get_page(page['slug'])
+        assert fetched is not None
+        assert fetched['id'] == page['id']
+        assert fetched['title'] == "Test Page"
+        assert fetched['content'] == "<p>Hello</p>"
+
+    def test_update_page(self, client, create_page):
+        page = create_page(title="Original Title", content="<p>Original</p>")
+
+        client.update_page(page_id=page['id'], title="Updated Title", content="<p>Updated</p>")
+
+        fetched = client.get_page(page['slug'])
+        assert fetched['title'] == "Updated Title"
+        assert fetched['content'] == "<p>Updated</p>"
+
+    def test_partial_update_page(self, client, create_page):
+        page = create_page(title="Original Title", content="<p>Original</p>")
+
+        client.update_page(page_id=page['id'], title="New Title")
+        fetched = client.get_page(page['slug'])
+        assert fetched['title'] == "New Title"
+        assert fetched['content'] == "<p>Original</p>"
+
+        client.update_page(page_id=page['id'], content="<p>New Content</p>")
+        fetched = client.get_page(page['slug'])
+        assert fetched['title'] == "New Title"
+        assert fetched['content'] == "<p>New Content</p>"
+
+    def test_delete_page(self, client, create_page):
+        page = create_page()
+        slug = page['slug']
+
+        client.delete_page(page['id'])
+
+        assert client.get_page(slug) is None
+
+    def test_get_page_not_found(self, client):
+        assert client.get_page("nonexistent-slug-xyz") is None
+
+
 class TestGancioError:
     def test_gancio_error_on_bad_request(self, client):
         with pytest.raises(GancioError) as exc_info:

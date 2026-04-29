@@ -288,11 +288,11 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "pillow", marker = "extra == 'test'" },
+    { name = "pillow", marker = "extra == 'test'", specifier = ">=12,<13" },
     { name = "pre-commit", marker = "extra == 'dev'" },
-    { name = "pytest", marker = "extra == 'test'" },
-    { name = "pytest-cov", marker = "extra == 'test'" },
-    { name = "pytest-sugar", marker = "extra == 'test'", specifier = ">=1.1.1" },
+    { name = "pytest", marker = "extra == 'test'", specifier = ">=9,<10" },
+    { name = "pytest-cov", marker = "extra == 'test'", specifier = ">=7,<8" },
+    { name = "pytest-sugar", marker = "extra == 'test'", specifier = ">=1.1.1,<2" },
     { name = "requests", specifier = ">=2.20,<3" },
     { name = "ruff", marker = "extra == 'dev'" },
 ]
