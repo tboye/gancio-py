@@ -4,7 +4,7 @@ import time
 import pytest
 from PIL import Image
 
-from gancio_py import Gancio, GancioError
+from gancio_py import BoolSetting, Gancio, GancioError, JsonSetting, StrSetting
 
 
 def _test_image():
@@ -124,6 +124,103 @@ class TestPlaces:
         place = client.get_place("Test Venue B")
         assert place is not None
         assert place["name"] == "Test Venue B"
+
+    def test_get_place_events(self, client, create_event):
+        create_event(place_name="Test Venue C", place_address="789 Other Street")
+
+        result = client.get_place_events("Test Venue C")
+        assert result is not None
+        assert result["place"]["name"] == "Test Venue C"
+        assert "events" in result
+        assert "pastEvents" in result
+
+    def test_get_place_events_not_found(self, client):
+        assert client.get_place_events("nonexistent-place-xyz") is None
+
+
+class TestSettings:
+    def test_get_settings(self, client):
+        settings = client.get_settings()
+        assert isinstance(settings, dict)
+        assert 'title' in settings
+
+    def test_set_str_setting(self, client):
+        settings = client.get_settings()
+        cases = [
+            (StrSetting.TITLE,                      "Test Title"),
+            (StrSetting.DESCRIPTION,                "Test description"),
+            (StrSetting.ABOUT,                      "<p>Test about</p>"),
+            (StrSetting.BASEURL,                    "http://localhost:13120"),
+            (StrSetting.ADMIN_EMAIL,                "test@example.com"),
+            (StrSetting.INSTANCE_TIMEZONE,          "Europe/Amsterdam"),
+            (StrSetting.INSTANCE_LOCALE,            "en"),
+            (StrSetting.INSTANCE_NAME,              "test-relay"),
+            (StrSetting.CUSTOM_JS,                  "console.log('test')"),
+            (StrSetting.CUSTOM_CSS,                 "body { color: red; }"),
+            (StrSetting.GEOCODING_PROVIDER,         "https://nominatim.openstreetmap.org/search"),
+            (StrSetting.GEOCODING_PROVIDER_TYPE,    "Nominatim"),
+            (StrSetting.TILELAYER_PROVIDER,         "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"),
+            (StrSetting.TILELAYER_PROVIDER_ATTRIBUTION, "Test attribution"),
+        ]
+        for key, value in cases:
+            original = settings.get(key)
+            try:
+                client.set_str_setting(key, value)
+                assert client.get_settings().get(key) == value
+            finally:
+                client.set_str_setting(key, original or "")
+
+    def test_set_bool_setting(self, client):
+        settings = client.get_settings()
+        for key in BoolSetting:
+            original = settings.get(key)
+            try:
+                client.set_bool_setting(key, not original)
+                assert client.get_settings().get(key) == (not original)
+            finally:
+                client.set_bool_setting(key, original)
+
+    def test_set_json_setting(self, client):
+        settings = client.get_settings()
+        cases = [
+            (JsonSetting.GEOCODING_COUNTRYCODES,  ["NL"]),
+            (JsonSetting.DEFAULT_FEDI_HASHTAGS,   ["test"]),
+            (JsonSetting.FOOTER_LINKS,            [{"href": "/", "label": "common.home"}]),
+            (JsonSetting.DARK_COLORS,             {"primary": "#FF0000", "error": "#FF5252", "info": "#2196F3",
+                                                   "success": "#4CAF50", "warning": "#FB8C00"}),
+            (JsonSetting.LIGHT_COLORS,            {"primary": "#FF0000", "error": "#FF5252", "info": "#2196F3",
+                                                   "success": "#4CAF50", "warning": "#FB8C00"}),
+            (JsonSetting.PLUGINS,                 []),
+            (JsonSetting.COLLECTION_IN_HOME,      None),
+            (JsonSetting.CALENDAR_FIRST_DAY_OF_WEEK, 1),
+            # SMTP is excluded: restoring without the original password would wipe credentials
+        ]
+        for key, value in cases:
+            original = settings.get(key)
+            try:
+                client.set_json_setting(key, value)
+                assert client.get_settings().get(key) == value
+            finally:
+                client.set_json_setting(key, original)
+
+    def test_get_smtp(self, client):
+        smtp = client.get_smtp()
+        assert isinstance(smtp, dict)
+
+    def test_logo(self, client):
+        client.set_logo(_test_image())
+        assert client.get_settings().get('logo')
+        assert isinstance(client.get_logo(), bytes)
+
+    def test_fallback_image(self, client):
+        client.set_fallback_image(_test_image())
+        assert client.get_settings().get('fallback_image')
+        assert isinstance(client.get_fallback_image(), bytes)
+
+    def test_header_image(self, client):
+        client.set_header_image(_test_image())
+        assert client.get_settings().get('header_image')
+        assert isinstance(client.get_header_image(), bytes)
 
 
 class TestPages:
