@@ -5,7 +5,7 @@ import logging
 import requests
 
 from gancio_py.exceptions import GancioError
-from gancio_py.settings import BoolSetting, JsonSetting, TextSetting
+from gancio_py.settings import BoolSetting, JsonSetting, StrSetting
 
 
 class Gancio:
@@ -363,17 +363,17 @@ class Gancio:
         self.logger.info("Fetched settings")
         return result
 
-    def set_text(self, key: TextSetting, value: str) -> None:
-        """Sets a text setting.
+    def set_str_setting(self, key: StrSetting, value: str) -> None:
+        """Sets a string setting.
 
         Args:
-            key: A TextSetting key.
+            key: A StrSetting key.
             value: String value.
         """
         self._request('POST', '/api/settings', json=dict(key=key, value=value))
         self.logger.info(f"Set {key} = {value!r}")
 
-    def set_bool(self, key: BoolSetting, value: bool) -> None:
+    def set_bool_setting(self, key: BoolSetting, value: bool) -> None:
         """Sets a boolean setting.
 
         Args:
@@ -383,7 +383,7 @@ class Gancio:
         self._request('POST', '/api/settings', json=dict(key=key, value=value))
         self.logger.info(f"Set {key} = {value!r}")
 
-    def set_json(self, key: JsonSetting, value: list | dict) -> None:
+    def set_json_setting(self, key: JsonSetting, value: list | dict) -> None:
         """Sets a setting whose value is a list or dict.
 
         Args:
@@ -397,7 +397,7 @@ class Gancio:
         """Sets any instance setting by raw key name.
 
         Use this as an escape hatch for settings not yet covered by
-        set_text / set_bool / set_json.
+        set_str_setting / set_bool_setting / set_json_setting.
 
         Args:
             key: Raw setting key string.

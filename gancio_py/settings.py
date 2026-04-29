@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class TextSetting(str, Enum):
+class StrSetting(str, Enum):
     TITLE = 'title'
     DESCRIPTION = 'description'
     ABOUT = 'about'
