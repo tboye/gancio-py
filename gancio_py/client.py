@@ -385,7 +385,7 @@ class Gancio:
         """Fetches a page by its slug.
 
         Args:
-            slug: The page's URL slug (e.g. 'about').
+            slug: The page's URL slug (e.g. 'my-new-page').
 
         Returns:
             Page dict with 'id', 'title', 'content', 'visible', and 'slug', or None if not found.
