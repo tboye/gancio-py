@@ -5,6 +5,7 @@ import logging
 import requests
 
 from gancio_py.exceptions import GancioError
+from gancio_py.settings import BoolSetting, JsonSetting, TextSetting
 
 
 class Gancio:
@@ -349,6 +350,128 @@ class Gancio:
             if e.status_code == 404:
                 return None
             raise
+
+    # --- Settings ---
+
+    def get_settings(self) -> dict:
+        """Fetches all instance settings.
+
+        Returns:
+            Dict of all settings.
+        """
+        result = self._request('GET', '/api/settings').json()
+        self.logger.info("Fetched settings")
+        return result
+
+    def set_text(self, key: TextSetting, value: str) -> None:
+        """Sets a text setting.
+
+        Args:
+            key: A TextSetting key.
+            value: String value.
+        """
+        self._request('POST', '/api/settings', json=dict(key=key, value=value))
+        self.logger.info(f"Set {key} = {value!r}")
+
+    def set_bool(self, key: BoolSetting, value: bool) -> None:
+        """Sets a boolean setting.
+
+        Args:
+            key: A BoolSetting key.
+            value: Boolean value.
+        """
+        self._request('POST', '/api/settings', json=dict(key=key, value=value))
+        self.logger.info(f"Set {key} = {value!r}")
+
+    def set_json(self, key: JsonSetting, value: list | dict) -> None:
+        """Sets a setting whose value is a list or dict.
+
+        Args:
+            key: A JsonSetting key.
+            value: List or dict value.
+        """
+        self._request('POST', '/api/settings', json=dict(key=key, value=value))
+        self.logger.info(f"Set {key} = {value!r}")
+
+    def set_raw(self, key: str, value) -> None:
+        """Sets any instance setting by raw key name.
+
+        Use this as an escape hatch for settings not yet covered by
+        set_text / set_bool / set_json.
+
+        Args:
+            key: Raw setting key string.
+            value: New value.
+        """
+        self._request('POST', '/api/settings', json=dict(key=key, value=value))
+        self.logger.info(f"Set {key!r} = {value!r}")
+
+    def get_smtp(self) -> dict:
+        """Fetches the SMTP configuration (password is stripped by the server).
+
+        Returns:
+            Dict with SMTP settings.
+        """
+        result = self._request('GET', '/api/settings/smtp').json()
+        self.logger.info("Fetched SMTP settings")
+        return result
+
+    def get_logo(self) -> bytes:
+        """Fetches the instance logo image.
+
+        Returns:
+            Raw PNG bytes.
+        """
+        result = self._request('GET', '/logo.png').content
+        self.logger.info("Fetched logo")
+        return result
+
+    def get_fallback_image(self) -> bytes:
+        """Fetches the fallback image shown when an event has no media.
+
+        Returns:
+            Raw image bytes.
+        """
+        result = self._request('GET', '/fallbackimage.png').content
+        self.logger.info("Fetched fallback image")
+        return result
+
+    def set_logo(self, image: io.BytesIO) -> None:
+        """Uploads the instance logo.
+
+        Args:
+            image: Image file as a BytesIO object.
+        """
+        self._request('POST', '/api/settings/logo', files={'logo': image})
+        self.logger.info("Uploaded logo")
+
+    def set_fallback_image(self, image: io.BytesIO) -> None:
+        """Uploads the fallback image shown when an event has no media.
+
+        Args:
+            image: Image file as a BytesIO object.
+        """
+        self._request('POST', '/api/settings/fallbackImage', files={'fallbackImage': image})
+        self.logger.info("Uploaded fallback image")
+
+    def get_header_image(self) -> bytes:
+        """Fetches the instance header image.
+
+        Returns:
+            Raw image bytes.
+        """
+        result = self._request('GET', '/headerimage.png').content
+        self.logger.info("Fetched header image")
+        return result
+
+    def set_header_image(self, image: io.BytesIO) -> None:
+        """Uploads the instance header image.
+
+        Args:
+            image: Image file as a BytesIO object.
+        """
+        self._request('POST', '/api/settings/headerImage', files={'headerImage': image})
+        self.logger.info("Uploaded header image")
 
     # --- Pages ---
 
