@@ -60,6 +60,7 @@ class Gancio:
         if dialect == "sqlite":
             db['storage'] = storage
         self._request('POST', '/api/setup/db', json={"db": db})
+        self.logger.info(f"Configured database (dialect={dialect})")
 
     def setup_restart(self) -> dict:
         """Completes first-run setup by creating an admin user and restarting Gancio.
@@ -67,7 +68,9 @@ class Gancio:
         Returns:
             Dict with 'email' and 'password' of the created admin.
         """
-        return self._request('POST', '/api/setup/restart').json()
+        result = self._request('POST', '/api/setup/restart').json()
+        self.logger.info("Setup complete, instance restarting")
+        return result
 
     # --- Auth ---
 
@@ -104,7 +107,9 @@ class Gancio:
         Returns:
             Dict with user details including 'email' and 'settings'.
         """
-        return self._request('GET', '/api/user').json()
+        result = self._request('GET', '/api/user').json()
+        self.logger.info(f"Fetched user '{result.get('username')}'")
+        return result
 
     # --- Events ---
 
@@ -150,7 +155,9 @@ class Gancio:
         if show_multidate is not None:
             params['show_multidate'] = show_multidate
 
-        return self._request('GET', '/api/events', params=params).json()
+        results = self._request('GET', '/api/events', params=params).json()
+        self.logger.info(f"Fetched {len(results)} events")
+        return results
 
     def get_event(self, slug: str) -> dict:
         """Fetches an event by its slug.
@@ -164,7 +171,9 @@ class Gancio:
         Raises:
             GancioError: If the event is not found (404).
         """
-        return self._request('GET', f'/api/event/detail/{slug}').json()
+        result = self._request('GET', f'/api/event/detail/{slug}').json()
+        self.logger.info(f"Fetched event '{slug}'")
+        return result
 
     def create_event(self, title: str, start_datetime: int, place_name: str, place_address: str,
                      description: str = None, end_datetime: int = None,
@@ -321,7 +330,9 @@ class Gancio:
         Returns:
             List of matching place dicts.
         """
-        return self._request('GET', '/api/place', params=dict(search=query)).json()
+        results = self._request('GET', '/api/place', params=dict(search=query)).json()
+        self.logger.info(f"Found {len(results)} places for query '{query}'")
+        return results
 
     def get_place(self, place_name: str) -> dict | None:
         """Finds a place by exact name.
@@ -333,7 +344,9 @@ class Gancio:
             Place dict, or None if not found.
         """
         results = self.search_place(place_name)
-        return results[0] if results else None
+        result = results[0] if results else None
+        self.logger.info(f"{'Found' if result else 'Place not found:'} '{place_name}'")
+        return result
 
     def get_place_events(self, place_name: str) -> dict | None:
         """Fetches a place and its upcoming events.
@@ -345,9 +358,12 @@ class Gancio:
             Dict with place details and an 'events' list, or None if not found.
         """
         try:
-            return self._request('GET', f'/api/place/{place_name}').json()
+            result = self._request('GET', f'/api/place/{place_name}').json()
+            self.logger.info(f"Fetched events for place '{place_name}'")
+            return result
         except GancioError as e:
             if e.status_code == 404:
+                self.logger.info(f"Place not found: '{place_name}'")
                 return None
             raise
 
