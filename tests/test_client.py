@@ -95,20 +95,30 @@ class TestEvents:
         assert not any("Two" in t for t in music_titles)
 
     def test_event_with_image(self, client, create_event):
-        """Create with image, then update another event's image."""
-        # Create with image
-        created = create_event(suffix=" With Image", image=_test_image())
-        fetched = client.get_event(created["slug"])
-        assert fetched["media"] is not None
+        """Image is preserved on update when no new image is provided."""
+        event = create_event(suffix=" With Image", image=_test_image())
+        assert client.get_event(event["slug"])["media"] is not None
 
-        # Update a different event to add an image
-        plain = create_event(suffix=" No Image")
-        client.update_event(event_id=plain["id"],
+        # Update title only — image must survive
+        client.update_event(event_id=event["id"],
+                            title="Test: Updated With Image",
+                            place_name="Test Place",
+                            place_address="123 Test Street")
+        assert client.get_event(event["slug"])["media"] is not None
+
+        # Replace image
+        client.update_event(event_id=event["id"],
                             place_name="Test Place",
                             place_address="123 Test Street",
                             image=_test_image())
-        fetched = client.get_event(plain["slug"])
-        assert fetched["media"] is not None
+        assert client.get_event(event["slug"])["media"] is not None
+
+        # Remove image
+        client.update_event(event_id=event["id"],
+                            place_name="Test Place",
+                            place_address="123 Test Street",
+                            image=False)
+        assert client.get_event(event["slug"])["media"] == []
 
 
 class TestPlaces:

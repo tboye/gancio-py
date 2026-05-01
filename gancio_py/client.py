@@ -239,7 +239,7 @@ class Gancio:
                      description: str = None, end_datetime: int = None,
                      place_latitude: float = None, place_longitude: float = None,
                      tags: list[str] = None, online_locations: list[str] = None,
-                     image: io.BytesIO = None, image_url: str = None,
+                     image: io.BytesIO | bool = None, image_url: str = None,
                      multidate: bool = None, recurrent: dict = None) -> dict:
         """Updates an existing event.
 
@@ -257,7 +257,7 @@ class Gancio:
             place_longitude: New venue longitude.
             tags: New list of tag names (replaces existing tags).
             online_locations: New list of online URLs.
-            image: New image file as a BytesIO object.
+            image: New image file as a BytesIO object, or False to remove the existing image.
             image_url: URL of a new image to attach.
             multidate: Whether the event spans multiple days.
             recurrent: New recurrence rules as a dict.
@@ -294,8 +294,16 @@ class Gancio:
         if recurrent is not None:
             data['recurrent'] = json.dumps(recurrent)
 
-        # Placeholder ensures multipart/form-data content type is set.
-        files = dict(image=image) if image else {"placeholder": ('', '')}
+        if image is False:
+            # Explicitly remove existing image; omitting image=1 tells the server to clear media.
+            files = {"placeholder": ('', '')}
+        elif image:
+            files = dict(image=image)
+        else:
+            # Sending image=1 tells the server to keep existing media unchanged.
+            # Without it the server clears media when no file is uploaded.
+            data['image'] = 1
+            files = {"placeholder": ('', '')}
 
         result = self._request('PUT', '/api/event', data=data, files=files).json()
         self.logger.info(f'Updated event {result}')
