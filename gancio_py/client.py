@@ -356,6 +356,16 @@ class Gancio:
         self.logger.info(f"{'Found' if result else 'Place not found:'} '{place_name}'")
         return result
 
+    def get_places(self) -> list[dict]:
+        """Returns all places known to this instance.
+
+        Returns:
+            List of place dicts.
+        """
+        results = self._request('GET', '/api/places').json()
+        self.logger.info(f"Fetched {len(results)} places")
+        return results
+
     def get_place_events(self, place_name: str) -> dict | None:
         """Fetches a place and its upcoming events.
 
@@ -726,6 +736,12 @@ class Gancio:
         self.logger.info(f"Fetched {len(results)} filters for collection {collection_id}")
         return results
 
+    def _validate_place_ids(self, place_ids: list[int]) -> None:
+        valid_ids = {p['id'] for p in self.get_places()}
+        missing = set(place_ids) - valid_ids
+        if missing:
+            raise ValueError(f"Place IDs not found: {sorted(missing)}")
+
     def add_filter(self, collection_id: int, tags: list[str] = None,
                    places: list[int] = None, actors: list[int] = None,
                    negate: bool = False) -> dict:
@@ -741,6 +757,8 @@ class Gancio:
         Returns:
             The created filter dict.
         """
+        if places:
+            self._validate_place_ids(places)
         result = self._request('POST', '/api/filter', json=dict(
             collectionId=collection_id,
             tags=tags or [],
@@ -766,6 +784,8 @@ class Gancio:
         Returns:
             The updated filter dict.
         """
+        if places:
+            self._validate_place_ids(places)
         data = {}
         if tags is not None:
             data['tags'] = tags

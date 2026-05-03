@@ -150,6 +150,15 @@ class TestPlaces:
     def test_get_place_events_not_found(self, client):
         assert client.get_place_events("nonexistent-place-xyz") is None
 
+    def test_get_places(self, client, create_event):
+        create_event(place_name="List Place A", place_address="1 A Street")
+        create_event(place_name="List Place B", place_address="2 B Street")
+
+        places = client.get_places()
+        names = [p['name'] for p in places]
+        assert "List Place A" in names
+        assert "List Place B" in names
+
 
 class TestSettings:
     def test_get_settings(self, client):
@@ -352,6 +361,28 @@ class TestFilters:
         client.delete_filter(f['id'])
         filters = client.get_filters(collection['id'])
         assert not any(fi['id'] == f['id'] for fi in filters)
+
+    def test_filter_with_place(self, client, create_event, create_collection):
+        event = create_event()
+        place_id = event['place']['id']
+        collection = create_collection()
+
+        f = client.add_filter(collection['id'], places=[place_id])
+        assert place_id in f['places']
+
+        updated = client.update_filter(f['id'], places=[place_id])
+        assert place_id in updated['places']
+
+    def test_filter_invalid_place_raises(self, client, create_collection):
+        collection = create_collection()
+        with pytest.raises(ValueError, match="Place IDs not found"):
+            client.add_filter(collection['id'], places=[999999])
+
+    def test_update_filter_invalid_place_raises(self, client, create_collection):
+        collection = create_collection()
+        f = client.add_filter(collection['id'], tags=["music"])
+        with pytest.raises(ValueError, match="Place IDs not found"):
+            client.update_filter(f['id'], places=[999999])
 
     def test_get_collections_with_filters(self, client, create_collection):
         collection = create_collection()
