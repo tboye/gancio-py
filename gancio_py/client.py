@@ -327,6 +327,15 @@ class Gancio:
         self._request('PUT', f'/api/event/confirm/{event_id}')
         self.logger.info(f"Confirmed event '{event_id}'")
 
+    def unconfirm_event(self, event_id: int) -> None:
+        """Reverts a confirmed event back to pending.
+
+        Args:
+            event_id: ID of the event to unconfirm.
+        """
+        self._request('PUT', f'/api/event/unconfirm/{event_id}')
+        self.logger.info(f"Unconfirmed event '{event_id}'")
+
     # --- Places ---
 
     def search_place(self, query: str) -> list[dict]:
@@ -355,6 +364,16 @@ class Gancio:
         result = results[0] if results else None
         self.logger.info(f"{'Found' if result else 'Place not found:'} '{place_name}'")
         return result
+
+    def get_places(self) -> list[dict]:
+        """Returns all places known to this instance.
+
+        Returns:
+            List of place dicts.
+        """
+        results = self._request('GET', '/api/places').json()
+        self.logger.info(f"Fetched {len(results)} places")
+        return results
 
     def get_place_events(self, place_name: str) -> dict | None:
         """Fetches a place and its upcoming events.
@@ -581,3 +600,219 @@ class Gancio:
         self._request('DELETE', f'/api/pages/{page_id}')
         self.logger.info(f"Deleted page {page_id}")
 
+    # --- Collections ---
+
+    def get_collections(self, with_filters: bool = False, pinned_only: bool = False) -> list[dict]:
+        """Fetches all collections ordered by sortIndex.
+
+        Args:
+            with_filters: Include each collection's filters in the response.
+            pinned_only: Only return pinned collections.
+
+        Returns:
+            List of collection dicts.
+        """
+        params = {}
+        if with_filters:
+            params['withFilters'] = 'true'
+        if pinned_only:
+            params['pin'] = 'true'
+        results = self._request('GET', '/api/collections', params=params).json()
+        self.logger.info(f"Fetched {len(results)} collections")
+        return results
+
+    def create_collection(self, name: str) -> dict:
+        """Creates a new collection.
+
+        Args:
+            name: Collection name.
+
+        Returns:
+            The created collection dict.
+        """
+        result = self._request('POST', '/api/collections', json=dict(name=name)).json()
+        self.logger.info(f"Created collection '{name}'")
+        return result
+
+    def delete_collection(self, collection_id: int) -> None:
+        """Deletes a collection.
+
+        Args:
+            collection_id: ID of the collection to delete.
+        """
+        self._request('DELETE', f'/api/collection/{collection_id}')
+        self.logger.info(f"Deleted collection {collection_id}")
+
+    def toggle_pin_collection(self, collection_id: int) -> None:
+        """Toggles whether a collection is pinned (shown in navigation).
+
+        Args:
+            collection_id: ID of the collection to toggle.
+        """
+        self._request('PUT', f'/api/collection/toggle/{collection_id}')
+        self.logger.info(f"Toggled pin on collection {collection_id}")
+
+    def move_collection_up(self, sort_index: int) -> None:
+        """Moves the collection at the given index one position up.
+
+        Args:
+            sort_index: The sortIndex of the collection to move.
+        """
+        self._request('PUT', f'/api/collection/moveup/{sort_index}')
+        self.logger.info(f"Moved up collection at sortIndex {sort_index}")
+
+    def sort_collections(self, ordered_ids: list[int | str]) -> None:
+        """Reorders collections to match the given list of IDs or names.
+
+        Repeatedly calls move_collection_up to bubble each collection into position.
+        String entries are matched against collection names case-insensitively.
+
+        Args:
+            ordered_ids: Collection IDs or names in the desired display order (first = top).
+        """
+        collections = self.get_collections()
+        name_to_id = {c['name']: c['id'] for c in collections}
+        resolved_ids = [
+            name_to_id[v] if isinstance(v, str) else v
+            for v in ordered_ids
+        ]
+        # [(id, sortIndex), ...] ordered by sortIndex asc = top to bottom
+        state = [(c['id'], c['sortIndex']) for c in collections]
+
+        for target_pos, target_id in enumerate(resolved_ids):
+            current_pos = next(i for i, (cid, _) in enumerate(state) if cid == target_id)
+            while current_pos > target_pos:
+                sort_index = state[current_pos][1]
+                self.move_collection_up(sort_index)
+                # Mirror the swap locally so we don't need another API call
+                prev_id, prev_si = state[current_pos - 1]
+                curr_id, curr_si = state[current_pos]
+                state[current_pos - 1] = (curr_id, prev_si)
+                state[current_pos] = (prev_id, curr_si)
+                current_pos -= 1
+        self.logger.info(f"Sorted {len(ordered_ids)} collections")
+
+    def get_collection_events(self, name: str, start: int = None, end: int = None,
+                              limit: int = None, page: int = None,
+                              show_recurrent: bool = None,
+                              reverse: bool = None, older: bool = None) -> list[dict]:
+        """Fetches events from a collection.
+
+        Args:
+            name: Collection name.
+            start: Only return events starting after this Unix timestamp.
+            end: Only return events starting before this Unix timestamp.
+            limit: Maximum number of events to return.
+            page: Page number for pagination.
+            show_recurrent: Include recurring events.
+            reverse: Reverse chronological order.
+            older: Select events older than start instead of newer.
+
+        Returns:
+            List of event dicts.
+        """
+        params = {}
+        if start is not None:
+            params['start_at'] = start
+        if end is not None:
+            params['end'] = end
+        if limit is not None:
+            params['max'] = limit
+        if page is not None:
+            params['page'] = page
+        if show_recurrent is not None:
+            params['show_recurrent'] = show_recurrent
+        if reverse is not None:
+            params['reverse'] = reverse
+        if older is not None:
+            params['older'] = older
+        results = self._request('GET', f'/api/collections/{name}', params=params).json()
+        self.logger.info(f"Fetched {len(results)} events from collection '{name}'")
+        return results
+
+    # --- Filters ---
+
+    def get_filters(self, collection_id: int) -> list[dict]:
+        """Fetches all filters for a collection.
+
+        Args:
+            collection_id: ID of the collection.
+
+        Returns:
+            List of filter dicts.
+        """
+        results = self._request('GET', f'/api/filter/{collection_id}').json()
+        self.logger.info(f"Fetched {len(results)} filters for collection {collection_id}")
+        return results
+
+    def _validate_place_ids(self, place_ids: list[int]) -> None:
+        valid_ids = {p['id'] for p in self.get_places()}
+        missing = set(place_ids) - valid_ids
+        if missing:
+            raise ValueError(f"Place IDs not found: {sorted(missing)}")
+
+    def add_filter(self, collection_id: int, tags: list[str] = None,
+                   places: list[int] = None, actors: list[int] = None,
+                   negate: bool = False) -> dict:
+        """Adds a filter to a collection.
+
+        Args:
+            collection_id: ID of the collection to add the filter to.
+            tags: Tag names to match.
+            places: Place IDs to match.
+            actors: Actor IDs to match.
+            negate: If True, exclude matching events instead of including them.
+
+        Returns:
+            The created filter dict.
+        """
+        if places:
+            self._validate_place_ids(places)
+        result = self._request('POST', '/api/filter', json=dict(
+            collectionId=collection_id,
+            tags=tags or [],
+            places=places or [],
+            actors=actors or [],
+            negate=negate,
+        )).json()
+        self.logger.info(f"Added filter {result['id']} to collection {collection_id}")
+        return result
+
+    def update_filter(self, filter_id: int, tags: list[str] = None,
+                      places: list[int] = None, actors: list[int] = None,
+                      negate: bool = None) -> dict:
+        """Updates a filter.
+
+        Args:
+            filter_id: ID of the filter to update.
+            tags: New tag names to match.
+            places: New place IDs to match.
+            actors: New actor IDs to match.
+            negate: New negate value.
+
+        Returns:
+            The updated filter dict.
+        """
+        if places:
+            self._validate_place_ids(places)
+        data = {}
+        if tags is not None:
+            data['tags'] = tags
+        if places is not None:
+            data['places'] = places
+        if actors is not None:
+            data['actors'] = actors
+        if negate is not None:
+            data['negate'] = negate
+        result = self._request('PUT', f'/api/filter/{filter_id}', json=data).json()
+        self.logger.info(f"Updated filter {filter_id}")
+        return result
+
+    def delete_filter(self, filter_id: int) -> None:
+        """Deletes a filter.
+
+        Args:
+            filter_id: ID of the filter to delete.
+        """
+        self._request('DELETE', f'/api/filter/{filter_id}')
+        self.logger.info(f"Deleted filter {filter_id}")

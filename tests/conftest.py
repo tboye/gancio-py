@@ -97,3 +97,22 @@ def create_page(client):
             client.delete_page(page_id)
         except Exception:
             pass
+
+
+@pytest.fixture
+def create_collection(client):
+    """Factory fixture to create test collections. Cleans up after test."""
+    created_ids = []
+
+    def _create(name="Test Collection"):
+        collection = client.create_collection(name=name)
+        created_ids.append(collection['id'])
+        return collection
+
+    yield _create
+
+    for collection_id in created_ids:
+        try:
+            client.delete_collection(collection_id)
+        except Exception:
+            pass
