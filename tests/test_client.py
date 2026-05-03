@@ -71,6 +71,9 @@ class TestEvents:
         fetched = client.get_event(created["slug"])
         assert fetched["title"] == "Test: Updated Event"
 
+        # Confirm
+        client.confirm_event(created["id"])
+
         # Delete
         client.delete_event(created["id"])
         time.sleep(1)
@@ -274,6 +277,90 @@ class TestPages:
 
     def test_get_page_not_found(self, client):
         assert client.get_page("nonexistent-slug-xyz") is None
+
+
+class TestCollections:
+    def test_create_and_delete(self, client, create_collection):
+        collection = create_collection("Test Collection")
+        assert collection['name'] == "Test Collection"
+        assert 'id' in collection
+
+        collections = client.get_collections()
+        assert any(c['id'] == collection['id'] for c in collections)
+
+    def test_toggle_pin(self, client, create_collection):
+        collection = create_collection()
+        original = next(c['isTop'] for c in client.get_collections() if c['id'] == collection['id'])
+
+        client.toggle_pin_collection(collection['id'])
+        after_first = next(c['isTop'] for c in client.get_collections() if c['id'] == collection['id'])
+        assert after_first == (not original)
+
+        client.toggle_pin_collection(collection['id'])
+        after_second = next(c['isTop'] for c in client.get_collections() if c['id'] == collection['id'])
+        assert after_second == original
+
+    def test_sort_collections(self, client, create_collection):
+        a = create_collection("Sort Test A")
+        b = create_collection("Sort Test B")
+        c = create_collection("Sort Test C")
+
+        desired = [c['id'], a['id'], b['id']]
+        client.sort_collections(desired)
+
+        collections = client.get_collections()
+        actual_ids = [col['id'] for col in collections]
+        positions = {cid: actual_ids.index(cid) for cid in desired}
+        assert positions[c['id']] < positions[a['id']] < positions[b['id']]
+
+    def test_sort_collections_by_name(self, client, create_collection):
+        a = create_collection("Sort Test A")
+        b = create_collection("Sort Test B")
+        c = create_collection("Sort Test C")
+
+        client.sort_collections(["Sort Test C", "Sort Test A", "Sort Test B"])
+
+        collections = client.get_collections()
+        actual_ids = [col['id'] for col in collections]
+        positions = {cid: actual_ids.index(cid) for cid in [c['id'], a['id'], b['id']]}
+        assert positions[c['id']] < positions[a['id']] < positions[b['id']]
+
+    def test_get_collection_events(self, client, create_collection, create_event):
+        create_event(tags=["jazz"])
+        collection = create_collection("Jazz")
+        client.add_filter(collection['id'], tags=["jazz"])
+
+        events = client.get_collection_events("Jazz")
+        assert isinstance(events, list)
+
+
+class TestFilters:
+    def test_filter_lifecycle(self, client, create_collection):
+        collection = create_collection()
+
+        f = client.add_filter(collection['id'], tags=["music", "live"])
+        assert f['tags'] == ["music", "live"]
+        assert f['negate'] is False
+
+        filters = client.get_filters(collection['id'])
+        assert any(fi['id'] == f['id'] for fi in filters)
+
+        updated = client.update_filter(f['id'], tags=["music"], negate=True)
+        assert updated['tags'] == ["music"]
+        assert updated['negate'] is True
+
+        client.delete_filter(f['id'])
+        filters = client.get_filters(collection['id'])
+        assert not any(fi['id'] == f['id'] for fi in filters)
+
+    def test_get_collections_with_filters(self, client, create_collection):
+        collection = create_collection()
+        client.add_filter(collection['id'], tags=["test"])
+
+        collections = client.get_collections(with_filters=True)
+        match = next((c for c in collections if c['id'] == collection['id']), None)
+        assert match is not None
+        assert 'filters' in match
 
 
 class TestGancioError:
