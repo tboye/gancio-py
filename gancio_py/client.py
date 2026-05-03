@@ -327,6 +327,15 @@ class Gancio:
         self._request('PUT', f'/api/event/confirm/{event_id}')
         self.logger.info(f"Confirmed event '{event_id}'")
 
+    def unconfirm_event(self, event_id: int) -> None:
+        """Reverts a confirmed event back to pending.
+
+        Args:
+            event_id: ID of the event to unconfirm.
+        """
+        self._request('PUT', f'/api/event/unconfirm/{event_id}')
+        self.logger.info(f"Unconfirmed event '{event_id}'")
+
     # --- Places ---
 
     def search_place(self, query: str) -> list[dict]:

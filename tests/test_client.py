@@ -71,8 +71,11 @@ class TestEvents:
         fetched = client.get_event(created["slug"])
         assert fetched["title"] == "Test: Updated Event"
 
-        # Confirm
+        client.unconfirm_event(created["id"])
+        assert client.get_event(created["slug"])["is_visible"] is False
+
         client.confirm_event(created["id"])
+        assert client.get_event(created["slug"])["is_visible"] is True
 
         # Delete
         client.delete_event(created["id"])
