@@ -153,6 +153,18 @@ class TestPlaces:
     def test_get_place_events_not_found(self, client):
         assert client.get_place_events("nonexistent-place-xyz") is None
 
+    def test_update_place(self, client, create_event):
+        event = create_event(place_name="Original Name", place_address="1 Original St",
+                             place_latitude=52.3676, place_longitude=4.9041)
+        place_id = event['place']['id']
+
+        updated = client.update_place(place_id, name="Updated Name", address="2 Updated St",
+                                      latitude=51.5074, longitude=-0.1278)
+        assert updated['name'] == "Updated Name"
+        assert updated['address'] == "2 Updated St"
+        assert updated['latitude'] == 51.5074
+        assert updated['longitude'] == -0.1278
+
     def test_get_places(self, client, create_event):
         create_event(place_name="List Place A", place_address="1 A Street")
         create_event(place_name="List Place B", place_address="2 B Street")

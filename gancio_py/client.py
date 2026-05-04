@@ -375,6 +375,33 @@ class Gancio:
         self.logger.info(f"Fetched {len(results)} places")
         return results
 
+    def update_place(self, place_id: int, name: str = None, address: str = None,
+                     latitude: float = None, longitude: float = None) -> dict:
+        """Updates an existing place.
+
+        Args:
+            place_id: ID of the place to update.
+            name: New name.
+            address: New address.
+            latitude: New latitude.
+            longitude: New longitude.
+
+        Returns:
+            The updated place dict.
+        """
+        data = {'id': place_id}
+        if name is not None:
+            data['name'] = name
+        if address is not None:
+            data['address'] = address
+        if latitude is not None:
+            data['latitude'] = latitude
+        if longitude is not None:
+            data['longitude'] = longitude
+        result = self._request('PUT', '/api/place', json=data).json()
+        self.logger.info(f"Updated place {place_id}")
+        return result
+
     def get_place_events(self, place_name: str) -> dict | None:
         """Fetches a place and its upcoming events.
 
