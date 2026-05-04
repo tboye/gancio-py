@@ -32,9 +32,9 @@ class TestLogin:
 
 
 class TestUser:
-    def test_get_user(self, client):
+    def test_get_user(self, client, admin_credentials):
         user = client.get_user()
-        assert "email" in user
+        assert user["email"] == admin_credentials["email"]
         assert "settings" in user
 
 
@@ -50,15 +50,17 @@ class TestEvents:
                                place_longitude=4.9041,
                                online_locations=["https://example.com/stream"],
                                tags=["test", "music", "live"])
+        assert created["title"] == "Test: Event"
         assert "slug" in created
+        assert "id" in created
 
         # Verify all fields persisted
         fetched = client.get_event(created["slug"])
         assert fetched["title"] == "Test: Event"
         assert fetched["description"] == "A detailed description"
-        assert fetched["end_datetime"] is not None
+        assert fetched["end_datetime"] == future + 3600
         assert fetched["place"]["name"] == "Test Place"
-        assert len(fetched["tags"]) == 3
+        assert set(fetched["tags"]) == {"test", "music", "live"}
         assert "https://example.com/stream" in fetched["online_locations"]
 
         # Update
@@ -93,31 +95,40 @@ class TestEvents:
 
         # Filter by tag
         all_events = client.get_events(tags=["test"])
-        assert len(all_events) >= 2
+        all_titles = [e["title"] for e in all_events]
+        assert any("One" in t for t in all_titles)
+        assert any("Two" in t for t in all_titles)
 
         music_events = client.get_events(tags=["music"])
         music_titles = [e["title"] for e in music_events]
         assert any("One" in t for t in music_titles)
         assert not any("Two" in t for t in music_titles)
 
+        # Filter by place ID
+        e2 = next(e for e in client.get_events(tags=["art"]) if "Two" in e["title"])
+        venue_b_events = client.get_events(places=[e2["place"]["id"]])
+        venue_b_titles = [e["title"] for e in venue_b_events]
+        assert any("Two" in t for t in venue_b_titles)
+        assert not any("One" in t for t in venue_b_titles)
+
     def test_event_with_image(self, client, create_event):
         """Image is preserved on update when no new image is provided."""
         event = create_event(suffix=" With Image", image=_test_image())
-        assert client.get_event(event["slug"])["media"] is not None
+        assert len(client.get_event(event["slug"])["media"]) > 0
 
         # Update title only — image must survive
         client.update_event(event_id=event["id"],
                             title="Test: Updated With Image",
                             place_name="Test Place",
                             place_address="123 Test Street")
-        assert client.get_event(event["slug"])["media"] is not None
+        assert len(client.get_event(event["slug"])["media"]) > 0
 
         # Replace image
         client.update_event(event_id=event["id"],
                             place_name="Test Place",
                             place_address="123 Test Street",
                             image=_test_image())
-        assert client.get_event(event["slug"])["media"] is not None
+        assert len(client.get_event(event["slug"])["media"]) > 0
 
         # Remove image
         client.update_event(event_id=event["id"],
@@ -142,13 +153,12 @@ class TestPlaces:
         assert place["name"] == "Test Venue B"
 
     def test_get_place_events(self, client, create_event):
-        create_event(place_name="Test Venue C", place_address="789 Other Street")
+        event = create_event(place_name="Test Venue C", place_address="789 Other Street")
 
         result = client.get_place_events("Test Venue C")
         assert result is not None
         assert result["place"]["name"] == "Test Venue C"
-        assert "events" in result
-        assert "pastEvents" in result
+        assert event["id"] in [e["id"] for e in result["events"]]
 
     def test_get_place_events_not_found(self, client):
         assert client.get_place_events("nonexistent-place-xyz") is None
@@ -350,12 +360,12 @@ class TestCollections:
         assert positions[c['id']] < positions[a['id']] < positions[b['id']]
 
     def test_get_collection_events(self, client, create_collection, create_event):
-        create_event(tags=["jazz"])
+        event = create_event(tags=["jazz"])
         collection = create_collection("Jazz")
         client.add_filter(collection['id'], tags=["jazz"])
 
         events = client.get_collection_events("Jazz")
-        assert isinstance(events, list)
+        assert any(e["id"] == event["id"] for e in events)
 
 
 class TestFilters:

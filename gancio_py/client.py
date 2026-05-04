@@ -113,8 +113,8 @@ class Gancio:
 
     # --- Events ---
 
-    def get_events(self, start: int = None, end: int = None, tags: list = None,
-                   places: list = None, query: str = None, max: int = None,
+    def get_events(self, start: int = None, end: int = None, tags: list[str] = None,
+                   places: list[int] = None, query: str = None, max: int = None,
                    page: int = None, show_recurrent: bool = None,
                    show_multidate: bool = None) -> list[dict]:
         """Fetches events matching the given filters.
@@ -125,7 +125,7 @@ class Gancio:
             start: Only return events starting after this Unix timestamp.
             end: Only return events starting before this Unix timestamp.
             tags: Filter by tag names.
-            places: Filter by place names.
+            places: Filter by place IDs.
             query: Free-text search query.
             max: Maximum number of events to return.
             page: Page number for pagination.
