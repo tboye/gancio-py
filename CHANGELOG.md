@@ -1,4 +1,4 @@
-# 0.1.0 - in progress
+# 0.1.0 (20-10-2026)
 
 ## Initial version
 Supports first-run setup, events, places, settings, pages, collections, filters

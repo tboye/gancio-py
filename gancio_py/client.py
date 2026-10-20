@@ -175,11 +175,22 @@ class Gancio:
         self.logger.info(f"Fetched event '{slug}'")
         return result
 
+    @staticmethod
+    def _image_details(image_name: str | None, image_focalpoint: tuple[float, float] | None) -> dict:
+        """Form fields for the name and focal point of an event's image."""
+        data = {}
+        if image_name is not None:
+            data['image_name'] = image_name
+        if image_focalpoint is not None:
+            data['image_focalpoint'] = f"{image_focalpoint[0]},{image_focalpoint[1]}"
+        return data
+
     def create_event(self, title: str, start_datetime: int, place_name: str, place_address: str,
                      description: str = None, end_datetime: int = None,
                      place_latitude: float = None, place_longitude: float = None,
                      tags: list[str] = None, online_locations: list[str] = None,
                      image: io.BytesIO = None, image_url: str = None,
+                     image_name: str = None, image_focalpoint: tuple[float, float] = None,
                      multidate: bool = None, recurrent: dict = None) -> dict:
         """Creates a new event.
 
@@ -196,6 +207,8 @@ class Gancio:
             online_locations: List of URLs for online participation.
             image: Image file as a BytesIO object.
             image_url: URL of an image to attach.
+            image_name: Name of the image, used as its alt text (defaults to the title).
+            image_focalpoint: Focal point of the image as (x, y), each from -1 to 1 (defaults to the center).
             multidate: Whether the event spans multiple days.
             recurrent: Recurrence rules as a dict.
 
@@ -221,6 +234,7 @@ class Gancio:
             data['online_locations[]'] = online_locations
         if image_url is not None:
             data['image_url'] = image_url
+        data.update(self._image_details(image_name, image_focalpoint))
         if multidate is not None:
             data['multidate'] = multidate
         if recurrent is not None:
@@ -240,6 +254,7 @@ class Gancio:
                      place_latitude: float = None, place_longitude: float = None,
                      tags: list[str] = None, online_locations: list[str] = None,
                      image: io.BytesIO | bool = None, image_url: str = None,
+                     image_name: str = None, image_focalpoint: tuple[float, float] = None,
                      multidate: bool = None, recurrent: dict = None) -> dict:
         """Updates an existing event.
 
@@ -259,6 +274,10 @@ class Gancio:
             online_locations: New list of online URLs.
             image: New image file as a BytesIO object, or False to remove the existing image.
             image_url: URL of a new image to attach.
+            image_name: New name of the image, used as its alt text (defaults to the title for a new image).
+            image_focalpoint: New focal point of the image as (x, y), each from -1 to 1. Required with
+                image_name when keeping the existing image: the server only renames it together with its focal
+                point (and fails otherwise).
             multidate: Whether the event spans multiple days.
             recurrent: New recurrence rules as a dict.
 
@@ -289,6 +308,9 @@ class Gancio:
             data['online_locations[]'] = online_locations
         if image_url is not None:
             data['image_url'] = image_url
+        if image_name is not None and image_focalpoint is None and image is None and image_url is None:
+            raise ValueError("image_focalpoint is required to rename the existing image")
+        data.update(self._image_details(image_name, image_focalpoint))
         if multidate is not None:
             data['multidate'] = multidate
         if recurrent is not None:

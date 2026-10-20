@@ -137,6 +137,26 @@ class TestEvents:
                             image=False)
         assert client.get_event(event["slug"])["media"] == []
 
+    def test_image_name_and_focalpoint(self, client, create_event):
+        event = create_event(suffix=" Named Image", image=_test_image(), image_name="Poster",
+                             image_focalpoint=(0.5, -0.5))
+        [media] = client.get_event(event["slug"])["media"]
+        assert (media["name"], media["focalpoint"]) == ("Poster", [0.5, -0.5])
+
+        # Rename the existing image, without uploading it again
+        client.update_event(event_id=event["id"],
+                            place_name="Test Place",
+                            place_address="123 Test Street",
+                            image_name="New poster",
+                            image_focalpoint=(0.5, -0.5))
+        [renamed] = client.get_event(event["slug"])["media"]
+        assert (renamed["name"], renamed["url"]) == ("New poster", media["url"])
+
+    def test_renaming_existing_image_needs_focalpoint(self, client):
+        # The server fails on it otherwise
+        with pytest.raises(ValueError, match="image_focalpoint"):
+            client.update_event(event_id=1, image_name="Poster")
+
 
 class TestPlaces:
     def test_search_and_get_place(self, client, create_event):
@@ -159,6 +179,7 @@ class TestPlaces:
         assert result is not None
         assert result["place"]["name"] == "Test Venue C"
         assert event["id"] in [e["id"] for e in result["events"]]
+        assert event["slug"] in [e["slug"] for e in result["events"]]
 
     def test_get_place_events_not_found(self, client):
         assert client.get_place_events("nonexistent-place-xyz") is None
