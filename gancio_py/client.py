@@ -258,7 +258,9 @@ class Gancio:
                      multidate: bool = None, recurrent: dict = None) -> dict:
         """Updates an existing event.
 
-        Only the provided fields are updated; omitted fields remain unchanged.
+        Not a partial update: pass the full event. The server keeps an omitted title, description, start and end
+        time, but clears omitted tags and recurrence, and needs place_name and place_address every time. Without them
+        the request fails with a 400 *after* the other fields have been saved.
 
         Args:
             event_id: ID of the event to update.

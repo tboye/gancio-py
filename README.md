@@ -38,8 +38,9 @@ events = gancio.get_events(tags=["music"])
 # Get a specific event
 event = gancio.get_event("my-event")
 
-# Update an event
-gancio.update_event(event_id=1, title="Updated Title")
+# Update an event: pass the full event, Gancio clears omitted tags and needs the place
+gancio.update_event(event_id=1, title="Updated Title", start_datetime=1700000000,
+                    place_name="The Venue", place_address="123 Main St", tags=["music", "live"])
 
 # Delete an event
 gancio.delete_event(event_id=1)
