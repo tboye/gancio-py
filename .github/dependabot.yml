@@ -1,0 +1,36 @@
+version: 2
+
+updates:
+  - package-ecosystem: uv
+    directory: /
+    cooldown:
+      default-days: 7
+    # A library: keep lower bounds, change ranges only when a release falls outside them
+    versioning-strategy: increase-if-necessary
+    commit-message:
+      prefix: chore
+      include: scope
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      python-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: /
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: ci
+      include: scope
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions-minor-and-patch:
+        update-types:
+          - minor
+          - patch
